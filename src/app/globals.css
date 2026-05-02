@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+@theme {
+  /* Warm brown + cream palette */
+  --color-cream-50:  #FBF7F1;
+  --color-cream-100: #F5EEE2;
+  --color-cream-200: #EBE0CC;
+
+  --color-mocha-50:  #F7F0E5;
+  --color-mocha-100: #EADBC4;
+  --color-mocha-200: #D7BC97;
+  --color-mocha-300: #BE9A6B;
+  --color-mocha-400: #A07A4C;
+  --color-mocha-500: #835F38;
+  --color-mocha-600: #6B4A29;
+  --color-mocha-700: #543820;
+  --color-mocha-800: #3D2917;
+  --color-mocha-900: #2A1B0F;
+
+  --color-ink: #2A1B0F;
+  --color-muted: #7A6A5A;
+  --color-line: #ECE2D0;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-playfair), ui-serif, Georgia, serif;
+
+  --radius-card: 16px;
+}
+
+html, body {
+  background: var(--color-cream-50);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection { background: var(--color-mocha-200); color: var(--color-mocha-900); }
+
+/* Subtle paper-grain texture for warmth */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background-image:
+    radial-gradient(at 12% 8%, rgba(190, 154, 107, 0.10) 0, transparent 45%),
+    radial-gradient(at 88% 92%, rgba(131, 95, 56, 0.08) 0, transparent 50%);
+}
+
+@layer components {
+  .btn-primary,
+  .btn-secondary,
+  .btn-ghost,
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium tracking-tight transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-mocha-400 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply bg-mocha-700 text-cream-50 hover:bg-mocha-800 shadow-[0_1px_2px_rgba(42,27,15,0.18),inset_0_1px_0_rgba(255,255,255,0.10)] hover:shadow-[0_3px_10px_-2px_rgba(42,27,15,0.30)];
+  }
+  .btn-secondary {
+    @apply bg-white text-mocha-800 border border-line hover:border-mocha-300 hover:bg-cream-100 shadow-sm;
+  }
+  .btn-ghost {
+    @apply text-mocha-700 hover:bg-cream-100;
+  }
+  .btn-danger {
+    @apply border border-red-200 bg-white text-red-700 hover:bg-red-50;
+  }
+
+  .input {
+    @apply w-full rounded-xl border border-line bg-white px-4 py-2.5 text-sm text-ink placeholder:text-muted/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] focus:outline-none focus:border-mocha-400 focus:ring-4 focus:ring-mocha-200/40 transition;
+  }
+
+  .card {
+    @apply rounded-[var(--radius-card)] border border-line bg-white shadow-[0_1px_2px_rgba(42,27,15,0.04),0_10px_28px_-14px_rgba(42,27,15,0.14)];
+  }
+  .card-hover {
+    @apply transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_2px_4px_rgba(42,27,15,0.06),0_24px_44px_-18px_rgba(42,27,15,0.22)];
+  }
+
+  .label {
+    @apply text-sm font-medium text-mocha-800;
+  }
+
+  .chip {
+    @apply inline-flex items-center rounded-full bg-mocha-50 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-mocha-700 ring-1 ring-inset ring-mocha-100;
+  }
+  .chip-soft {
+    @apply inline-flex items-center rounded-full bg-cream-100 px-2.5 py-0.5 text-[11px] font-medium tracking-tight text-mocha-700;
+  }
+
+  .h-display {
+    @apply font-display tracking-tight text-mocha-900;
+  }
+
+  .divider {
+    @apply h-px bg-gradient-to-r from-transparent via-line to-transparent;
+  }
+}
