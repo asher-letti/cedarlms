@@ -5,6 +5,8 @@ import EnrollButton from "./EnrollButton";
 import LessonItem from "./LessonItem";
 import AssignmentsLearner from "./AssignmentsLearner";
 import CourseCover from "@/components/CourseCover";
+import ProgressBar from "@/components/ProgressBar";
+import { fmtDuration } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +23,7 @@ export default async function CourseDetail({ params }: { params: Promise<{ id: s
 
   const { data: lessons } = await supabase
     .from("lessons")
-    .select("id, title, position, content_type, storage_path, body")
+    .select("id, title, position, content_type, storage_path, body, duration_minutes")
     .eq("course_id", id)
     .order("position");
 
@@ -50,6 +52,24 @@ export default async function CourseDetail({ params }: { params: Promise<{ id: s
         .eq("user_id", user.id)
     : { data: null };
 
+  const lessonIds = (lessons ?? []).map(l => l.id);
+  const { data: myProgress } = enrolled && !isInstructor && user && lessonIds.length
+    ? await supabase.from("lesson_progress")
+        .select("lesson_id, completed")
+        .eq("user_id", user.id)
+        .in("lesson_id", lessonIds)
+    : { data: null };
+
+  const completedSet = new Set(((myProgress as any[]) ?? []).filter(p => p.completed).map(p => p.lesson_id));
+  const totalLessons = lessons?.length ?? 0;
+  const completedLessons = completedSet.size;
+  const progressPct = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
+
+  const totalDurationMin = (lessons ?? []).reduce(
+    (sum, l: any) => sum + (l.duration_minutes ?? 0), 0
+  );
+  const totalDurationLabel = fmtDuration(totalDurationMin);
+
   return (
     <article className="grid gap-10 lg:grid-cols-3">
       <div className="lg:col-span-2">
@@ -70,11 +90,21 @@ export default async function CourseDetail({ params }: { params: Promise<{ id: s
 
         <div className="flex items-baseline justify-between">
           <h2 className="h-display text-2xl">Curriculum</h2>
-          <span className="text-xs uppercase tracking-wider text-muted">{lessons?.length ?? 0} lessons</span>
+          <span className="text-xs uppercase tracking-wider text-muted">
+            {totalLessons} lesson{totalLessons === 1 ? "" : "s"}
+            {totalDurationLabel && <> · {totalDurationLabel}</>}
+          </span>
         </div>
         <ul className="card mt-4 divide-y divide-line overflow-hidden">
           {lessons?.length ? lessons.map((l: any, i: number) => (
-            <LessonItem key={l.id} lesson={l} canAccess={canAccess} index={i + 1} />
+            <LessonItem
+              key={l.id}
+              lesson={l}
+              canAccess={canAccess}
+              index={i + 1}
+              initiallyComplete={completedSet.has(l.id)}
+              userId={enrolled && !isInstructor ? user?.id ?? null : null}
+            />
           )) : <li className="p-8 text-muted text-center">No lessons yet.</li>}
         </ul>
 
@@ -107,6 +137,16 @@ export default async function CourseDetail({ params }: { params: Promise<{ id: s
 
       <aside>
         <div className="card p-6 sticky top-24">
+          {enrolled && !isInstructor && totalLessons > 0 && (
+            <>
+              <p className="text-xs uppercase tracking-wider text-mocha-600">Your progress</p>
+              <p className="mt-1 font-display text-3xl text-mocha-900">{Math.round(progressPct)}%</p>
+              <p className="mt-1 text-sm text-muted">{completedLessons} of {totalLessons} lessons completed</p>
+              <div className="mt-3"><ProgressBar value={progressPct} /></div>
+              <div className="my-5 h-px bg-line" />
+            </>
+          )}
+
           <p className="text-xs uppercase tracking-wider text-mocha-600">Enrollment</p>
           <p className="mt-1 font-display text-3xl text-mocha-900">Free</p>
           <p className="mt-2 text-sm text-muted">Lifetime access · learn at your pace.</p>
@@ -126,7 +166,8 @@ export default async function CourseDetail({ params }: { params: Promise<{ id: s
           </div>
 
           <ul className="mt-6 space-y-2.5 text-sm text-mocha-800">
-            <li className="flex items-center gap-2"><Dot/> {lessons?.length ?? 0} lessons</li>
+            <li className="flex items-center gap-2"><Dot/> {totalLessons} lessons</li>
+            {totalDurationLabel && <li className="flex items-center gap-2"><Dot/> {totalDurationLabel} of content</li>}
             <li className="flex items-center gap-2"><Dot/> {assignments?.length ?? 0} assignments</li>
             <li className="flex items-center gap-2"><Dot/> Videos, documents & readings</li>
             <li className="flex items-center gap-2"><Dot/> Access on any device</li>

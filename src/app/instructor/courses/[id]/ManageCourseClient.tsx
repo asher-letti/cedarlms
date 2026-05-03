@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AssignmentsInstructor from "./AssignmentsInstructor";
+import QuizManager from "@/components/QuizManager";
 import { MAX_LESSON_BYTES, checkSize } from "@/lib/upload";
 
 type Course = {
@@ -14,6 +15,7 @@ type Lesson = {
   id: string; title: string; position: number;
   content_type: "video" | "document" | "quiz" | "text";
   storage_path: string | null; body: string | null;
+  duration_minutes: number | null;
 };
 type Assignment = {
   id: string; course_id: string; title: string;
@@ -35,6 +37,7 @@ export default function ManageCourseClient({
   const [contentType, setContentType] = useState<Lesson["content_type"]>("video");
   const [file, setFile] = useState<File | null>(null);
   const [body, setBody] = useState("");
+  const [duration, setDuration] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -42,6 +45,8 @@ export default function ManageCourseClient({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editBody, setEditBody] = useState("");
+  const [editDuration, setEditDuration] = useState<string>("");
+  const [openQuizId, setOpenQuizId] = useState<string | null>(null);
 
   const togglePublish = async () => {
     const next = !published;
@@ -67,25 +72,31 @@ export default function ManageCourseClient({
       storage_path = path;
     }
     const position = lessons.length;
+    const durationVal = duration.trim() === "" ? null : Math.max(0, Math.round(Number(duration)));
     const { data, error } = await supabase.from("lessons").insert({
       course_id: course.id, title, position, content_type: contentType,
       storage_path, body: contentType === "text" ? body : null,
+      duration_minutes: durationVal,
     }).select("*").single();
     setBusy(false);
     if (error) return setErr(error.message);
     setLessons([...lessons, data as Lesson]);
-    setTitle(""); setFile(null); setBody("");
+    setTitle(""); setFile(null); setBody(""); setDuration("");
   };
 
   const startEdit = (l: Lesson) => {
     setEditingId(l.id);
     setEditTitle(l.title);
     setEditBody(l.body ?? "");
+    setEditDuration(l.duration_minutes != null ? String(l.duration_minutes) : "");
   };
   const saveEdit = async () => {
     if (!editingId) return;
-    const patch: Partial<Lesson> = { title: editTitle };
     const lesson = lessons.find(l => l.id === editingId);
+    const patch: Partial<Lesson> = {
+      title: editTitle,
+      duration_minutes: editDuration.trim() === "" ? null : Math.max(0, Math.round(Number(editDuration))),
+    };
     if (lesson?.content_type === "text") patch.body = editBody;
     await supabase.from("lessons").update(patch).eq("id", editingId);
     setLessons(lessons.map(l => l.id === editingId ? { ...l, ...patch } as Lesson : l));
@@ -117,6 +128,7 @@ export default function ManageCourseClient({
           <p className="mt-2 text-muted">Manage your curriculum, assignments and visibility.</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link href={`/instructor/courses/${course.id}/students`} className="btn-secondary">Students</Link>
           <Link href={`/instructor/courses/${course.id}/edit`} className="btn-secondary">Edit details</Link>
           <button onClick={togglePublish} className={published ? "btn-secondary" : "btn-primary"}>
             {published ? "Unpublish" : "Publish"}
@@ -134,6 +146,11 @@ export default function ManageCourseClient({
               {editingId === l.id ? (
                 <div className="space-y-3">
                   <input className="input" value={editTitle} onChange={(e)=>setEditTitle(e.target.value)} />
+                  <div>
+                    <label className="text-xs text-muted">Duration (minutes, optional)</label>
+                    <input className="input mt-1" type="number" min={0} value={editDuration}
+                           onChange={(e)=>setEditDuration(e.target.value)} placeholder="e.g. 15" />
+                  </div>
                   {l.content_type === "text" && (
                     <textarea className="input" rows={4} value={editBody} onChange={(e)=>setEditBody(e.target.value)} />
                   )}
@@ -143,16 +160,30 @@ export default function ManageCourseClient({
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-3">
-                    <span className="chip">{l.content_type}</span>
-                    <span className="font-medium text-mocha-900">{l.title}</span>
-                  </span>
-                  <span className="flex gap-3 text-sm">
-                    <button onClick={() => startEdit(l)} className="text-mocha-700 hover:underline underline-offset-4">Edit</button>
-                    <button onClick={() => deleteLesson(l.id, l.storage_path)} className="text-red-700 hover:underline underline-offset-4">Delete</button>
-                  </span>
-                </div>
+                <>
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-3 min-w-0">
+                      <span className="chip">{l.content_type}</span>
+                      <span className="font-medium text-mocha-900 truncate">{l.title}</span>
+                      {l.duration_minutes != null && (
+                        <span className="text-xs text-muted whitespace-nowrap">{l.duration_minutes} min</span>
+                      )}
+                    </span>
+                    <span className="flex gap-3 text-sm">
+                      {l.content_type === "quiz" && (
+                        <button onClick={() => setOpenQuizId(openQuizId === l.id ? null : l.id)}
+                                className="text-mocha-700 hover:underline underline-offset-4">
+                          {openQuizId === l.id ? "Hide questions" : "Manage questions"}
+                        </button>
+                      )}
+                      <button onClick={() => startEdit(l)} className="text-mocha-700 hover:underline underline-offset-4">Edit</button>
+                      <button onClick={() => deleteLesson(l.id, l.storage_path)} className="text-red-700 hover:underline underline-offset-4">Delete</button>
+                    </span>
+                  </div>
+                  {l.content_type === "quiz" && openQuizId === l.id && (
+                    <QuizManager lessonId={l.id} />
+                  )}
+                </>
               )}
             </li>
           ))}
@@ -195,6 +226,13 @@ export default function ManageCourseClient({
               <textarea className="input mt-1.5" rows={6} value={body} onChange={(e)=>setBody(e.target.value)} required />
             </div>
           )}
+          <div>
+            <label className="label">Duration <span className="text-muted font-normal">(minutes, optional)</span></label>
+            <input className="input mt-1.5" type="number" min={0} value={duration}
+                   onChange={(e)=>setDuration(e.target.value)} placeholder="e.g. 15" />
+            <p className="mt-1 text-xs text-muted">Helps learners plan; sums into a total course duration.</p>
+          </div>
+
           {err && <p className="text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{err}</p>}
           <div>
             <button disabled={busy} className="btn-primary">{busy ? "Adding…" : "Add lesson"}</button>
