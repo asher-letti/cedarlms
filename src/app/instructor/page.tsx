@@ -2,20 +2,9 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getSession } from "@/lib/supabase/auth";
 import CourseCover from "@/components/CourseCover";
+import RecentActivityFeed, { type ActivityItem } from "@/components/RecentActivityFeed";
 
 export const dynamic = "force-dynamic";
-
-function timeAgo(iso: string) {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.round(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins} min ago`;
-  const hrs = Math.round(mins / 60);
-  if (hrs < 24) return `${hrs} hr ago`;
-  const days = Math.round(hrs / 24);
-  if (days < 7) return `${days} day${days === 1 ? "" : "s"} ago`;
-  return new Date(iso).toLocaleDateString();
-}
 
 export default async function InstructorDashboard() {
   const { user, profile } = await getSession();
@@ -39,7 +28,7 @@ export default async function InstructorDashboard() {
   ]);
 
   const teaching = coursesRes.data ?? [];
-  const recentSubs = (recentSubsRes.data ?? []) as any[];
+  const recentSubs = (recentSubsRes.data ?? []) as unknown as ActivityItem[];
   const ungradedCount = ungradedCountRes.count ?? 0;
 
   const courseIds = teaching.map((c: any) => c.id);
@@ -105,51 +94,7 @@ export default async function InstructorDashboard() {
         </section>
 
         <aside>
-          <div className="card overflow-hidden">
-            <div className="flex items-center justify-between border-b border-line p-5">
-              <h2 className="h-display text-xl">Recent activity</h2>
-              <span className="chip">{recentSubs.length}</span>
-            </div>
-            {recentSubs.length === 0 ? (
-              <div className="p-6 text-center text-sm text-muted">
-                No submissions yet. They'll appear here as students send work in.
-              </div>
-            ) : (
-              <ul className="divide-y divide-line">
-                {recentSubs.map((s) => {
-                  const studentName = s.profiles?.full_name ?? "A learner";
-                  const courseTitle = s.assignments?.courses?.title ?? "course";
-                  const assignmentTitle = s.assignments?.title ?? "an assignment";
-                  const courseId = s.assignments?.courses?.id;
-                  const isGraded = !!s.graded_at;
-                  return (
-                    <li key={s.id} className="p-4 hover:bg-cream-50/60 transition">
-                      <Link href={courseId ? `/instructor/courses/${courseId}` : "#"} className="block">
-                        <div className="flex items-start gap-3">
-                          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-mocha-100 text-mocha-800 text-xs font-semibold">
-                            {studentName.split(" ").slice(0, 2).map((w: string) => w[0]?.toUpperCase()).join("") || "L"}
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm leading-snug text-mocha-900">
-                              <strong className="font-semibold">{studentName}</strong>{" "}
-                              <span className="text-muted">submitted</span>{" "}
-                              <span className="font-medium">{assignmentTitle}</span>
-                            </p>
-                            <p className="mt-0.5 text-xs text-muted truncate">
-                              in <span className="text-mocha-700">{courseTitle}</span> · {timeAgo(s.submitted_at)}
-                            </p>
-                          </div>
-                          <span className={`chip shrink-0 ${isGraded ? "bg-emerald-50 text-emerald-700 ring-emerald-100" : "bg-amber-50 text-amber-800 ring-amber-100"}`}>
-                            {isGraded ? `${s.grade ?? ""}` : "Grade"}
-                          </span>
-                        </div>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
+          <RecentActivityFeed initial={recentSubs} />
         </aside>
       </div>
     </div>
