@@ -3,6 +3,7 @@ import StatsBanner from "@/components/landing/StatsBanner";
 import Features from "@/components/landing/Features";
 import Showcase from "@/components/landing/Showcase";
 import HowItWorks from "@/components/landing/HowItWorks";
+import Pricing from "@/components/landing/Pricing";
 import FinalCTA from "@/components/landing/FinalCTA";
 import MobileStickyCTA from "@/components/landing/MobileStickyCTA";
 
@@ -19,6 +20,7 @@ export default function Home() {
       <Features />
       <Showcase />
       <HowItWorks />
+      <Pricing />
       <FinalCTA />
       <MobileStickyCTA />
     </div>
