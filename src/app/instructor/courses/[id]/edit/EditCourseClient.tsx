@@ -5,16 +5,19 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import CourseCover from "@/components/CourseCover";
 import { MAX_COVER_BYTES, checkSize } from "@/lib/upload";
+import { CATEGORIES } from "@/lib/categories";
 
 type Course = {
   id: string; title: string; description: string | null;
   cover_url: string | null; published: boolean; instructor_id: string;
+  category: string | null;
 };
 
 export default function EditCourseClient({ course }: { course: Course }) {
   const router = useRouter();
   const [title, setTitle] = useState(course.title);
   const [description, setDescription] = useState(course.description ?? "");
+  const [category, setCategory] = useState<string>(course.category ?? "General");
   const [cover, setCover] = useState<File | null>(null);
   const [coverUrl, setCoverUrl] = useState(course.cover_url);
   const [busy, setBusy] = useState(false);
@@ -39,7 +42,7 @@ export default function EditCourseClient({ course }: { course: Course }) {
       nextCoverUrl = supabase.storage.from("course-covers").getPublicUrl(path).data.publicUrl;
     }
     const { error } = await supabase.from("courses")
-      .update({ title, description, cover_url: nextCoverUrl })
+      .update({ title, description, category, cover_url: nextCoverUrl })
       .eq("id", course.id);
     setBusy(false);
     if (error) return setErr(error.message);
@@ -61,6 +64,12 @@ export default function EditCourseClient({ course }: { course: Course }) {
         <div>
           <label className="label">Description</label>
           <textarea className="input mt-1.5" rows={6} value={description} onChange={(e)=>setDescription(e.target.value)} />
+        </div>
+        <div>
+          <label className="label">Category</label>
+          <select className="input mt-1.5" value={category} onChange={(e)=>setCategory(e.target.value)}>
+            {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
         </div>
         <div>
           <label className="label">Cover image</label>

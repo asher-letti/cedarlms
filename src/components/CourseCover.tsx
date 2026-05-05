@@ -8,15 +8,20 @@ type Props = {
   className?: string;
 };
 
+// Warm earthy palette: mocha, terracotta, sage, ochre — never cool blues.
 const PALETTES: Array<[string, string]> = [
-  ["#6B4A29", "#C9A47A"],
-  ["#543820", "#BE9A6B"],
-  ["#835F38", "#EADBC4"],
-  ["#3D2917", "#A07A4C"],
-  ["#A07A4C", "#F5EEE2"],
-  ["#5A3A1D", "#D7BC97"],
-  ["#7B4F2C", "#E8C8A0"],
-  ["#412816", "#B89576"],
+  ["#6B4A29", "#C9A47A"], // mocha
+  ["#543820", "#BE9A6B"], // mocha deep
+  ["#835F38", "#EADBC4"], // mocha light
+  ["#A07A4C", "#F5EEE2"], // mocha cream
+  ["#B45838", "#E8A088"], // terracotta
+  ["#8C3F25", "#D6856A"], // terracotta deep
+  ["#6B7C5C", "#A4B58F"], // sage
+  ["#54684A", "#8FA67A"], // sage deep
+  ["#C28E2A", "#E5C77B"], // ochre
+  ["#9A6C1F", "#D8A856"], // ochre deep
+  ["#5D4E37", "#8E795A"], // cedar
+  ["#3D2917", "#A07A4C"], // bark
 ];
 
 function hashIndex(id: string, mod: number) {

@@ -4,11 +4,13 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { MAX_COVER_BYTES, checkSize } from "@/lib/upload";
+import { CATEGORIES } from "@/lib/categories";
 
 export default function NewCoursePage() {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [category, setCategory] = useState<string>("General");
   const [cover, setCover] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -43,7 +45,7 @@ export default function NewCoursePage() {
     }
 
     const { data: course, error } = await supabase.from("courses").insert({
-      title, description, cover_url, instructor_id: user.id,
+      title, description, category, cover_url, instructor_id: user.id,
     }).select("id").single();
 
     setLoading(false);
@@ -72,6 +74,12 @@ export default function NewCoursePage() {
           <label className="label">Description</label>
           <textarea className="input mt-1.5" rows={5} placeholder="What will students learn?"
                     value={description} onChange={(e)=>setDescription(e.target.value)} />
+        </div>
+        <div>
+          <label className="label">Category</label>
+          <select className="input mt-1.5" value={category} onChange={(e)=>setCategory(e.target.value)}>
+            {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
         </div>
         <div>
           <label className="label">Cover image <span className="text-muted font-normal">(optional, max 5 MB — we'll generate a beautiful one if not)</span></label>
