@@ -239,10 +239,14 @@ body::before {
   }
 
   /* ─── Skeleton loaders ────────────────────────────────────────────────── */
-  .skeleton {
-    @apply relative overflow-hidden bg-cream-100 rounded-lg;
+  .skeleton,
+  .skeleton-circle {
+    @apply relative overflow-hidden bg-cream-100;
   }
-  .skeleton::after {
+  .skeleton { @apply rounded-lg; }
+  .skeleton-circle { @apply rounded-full; }
+  .skeleton::after,
+  .skeleton-circle::after {
     content: "";
     position: absolute;
     inset: 0;
@@ -257,7 +261,6 @@ body::before {
     background-position: -200% 0;
     animation: shimmer 1.5s ease-in-out infinite;
   }
-  .skeleton-circle { @apply skeleton rounded-full; }
 }
 
 /* Landing animations */
