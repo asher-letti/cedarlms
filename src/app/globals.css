@@ -27,14 +27,20 @@
   --radius-card: 16px;
 }
 
-html, body {
+html {
+  /* Clip horizontal overflow without establishing a new scroll container.
+     Avoids the iOS Safari bug where `overflow-x: hidden` on <html> + <body>
+     can intermittently freeze touch scroll. */
+  overflow-x: clip;
+}
+
+body {
   background: var(--color-cream-50);
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  overflow-x: hidden;          /* hard-stop accidental horizontal scroll */
-  overscroll-behavior-y: none; /* avoid iOS rubber-band over the sticky bar */
+  /* Body keeps natural scroll. Do NOT set overflow-x or overscroll-behavior here. */
 }
 
 ::selection { background: var(--color-mocha-200); color: var(--color-mocha-900); }
@@ -69,7 +75,7 @@ body::before {
   }
 
   .btn-primary {
-    @apply text-cream-50
+    @apply relative overflow-hidden text-cream-50
            bg-gradient-to-b from-mocha-600 via-mocha-700 to-mocha-800
            shadow-[0_1px_2px_rgba(42,27,15,0.20),inset_0_1px_0_rgba(255,255,255,0.14),inset_0_-1px_0_rgba(0,0,0,0.18)]
            hover:from-mocha-700 hover:via-mocha-800 hover:to-mocha-900
@@ -77,6 +83,22 @@ body::before {
            hover:shadow-[0_10px_24px_-8px_rgba(42,27,15,0.45),inset_0_1px_0_rgba(255,255,255,0.12)]
            active:shadow-[0_1px_2px_rgba(42,27,15,0.18),inset_0_2px_4px_rgba(0,0,0,0.20)];
   }
+  /* Subtle highlight sweep across the primary button on hover */
+  .btn-primary::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      120deg,
+      transparent 30%,
+      rgba(255, 255, 255, 0.18) 50%,
+      transparent 70%
+    );
+    transform: translateX(-110%);
+    transition: transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+    pointer-events: none;
+  }
+  .btn-primary:hover::after { transform: translateX(110%); }
 
   .btn-secondary {
     @apply text-mocha-800 bg-white border border-line
@@ -116,6 +138,15 @@ body::before {
   .card {
     @apply relative rounded-[var(--radius-card)] border border-line bg-white
            shadow-[0_1px_2px_rgba(42,27,15,0.04),0_10px_28px_-14px_rgba(42,27,15,0.14)];
+  }
+  /* Hairline inner highlight at the top edge for that "premium screen" feel */
+  .card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
   }
   .card-hover {
     @apply transition-[transform,box-shadow,border-color] duration-300
