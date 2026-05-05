@@ -28,14 +28,14 @@ export default function FinalCTA() {
               <div className="flex flex-col sm:flex-row gap-3">
                 <Link
                   href="/signup"
-                  className="btn-primary w-full sm:w-auto justify-center px-7 py-3.5 text-base"
+                  className="btn-primary w-full sm:w-auto justify-center px-7 text-base"
                 >
                   Create your account
                   <span aria-hidden className="text-cream-50/80">→</span>
                 </Link>
                 <Link
                   href="/courses"
-                  className="btn-secondary w-full sm:w-auto justify-center px-7 py-3.5 text-base"
+                  className="btn-secondary w-full sm:w-auto justify-center px-7 text-base"
                 >
                   See the catalog
                 </Link>

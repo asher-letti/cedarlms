@@ -21,18 +21,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="min-h-screen flex flex-col">
         <header className="sticky top-0 z-30 glass">
           <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 sm:px-6 py-3.5">
-            <Link href="/" className="group flex items-center gap-2.5 transition-transform duration-300 hover:scale-[1.02]">
-              <span className="relative grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-mocha-500 via-mocha-700 to-mocha-900 text-cream-50 font-display text-base shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_2px_8px_-2px_rgba(42,27,15,0.35)] ring-1 ring-mocha-900/10">
-                C
-                <span aria-hidden className="pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-tr from-transparent via-white/10 to-white/30 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-              </span>
-              <span className="font-display text-xl text-mocha-900 tracking-tight">Cedar</span>
+            <Link
+              href="/"
+              className="font-display text-2xl text-mocha-900 tracking-tight transition-opacity duration-200 hover:opacity-80"
+            >
+              Cedar
             </Link>
-            <div className="flex items-center gap-1 text-sm">
-              <Link href="/courses" className="px-3 py-2 rounded-full text-mocha-800 hover:bg-cream-100/80 transition-colors duration-200">Browse</Link>
+            <div className="flex items-center gap-6 text-sm">
+              <Link href="/courses" className="nav-link">Browse</Link>
               {user ? (
                 <>
-                  <Link href="/dashboard" className="px-3 py-2 rounded-full text-mocha-800 hover:bg-cream-100/80 transition-colors duration-200">Dashboard</Link>
+                  <Link href="/dashboard" className="nav-link">Dashboard</Link>
                   <div className="ml-2 hidden items-center gap-2 rounded-full border border-line/80 bg-white/70 backdrop-blur-md pl-2 pr-1 py-1 shadow-[0_1px_2px_rgba(42,27,15,0.04)] sm:flex">
                     <span className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-mocha-100 to-mocha-200 text-mocha-800 text-xs font-semibold ring-1 ring-mocha-200/60">
                       {(profile?.full_name?.[0] ?? user.email?.[0] ?? "U").toUpperCase()}
@@ -44,8 +43,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 </>
               ) : (
                 <>
-                  <Link href="/login" className="px-3 py-2 rounded-full text-mocha-800 hover:bg-cream-100/80 transition-colors duration-200">Log in</Link>
-                  <Link href="/signup" className="btn-primary ml-2">Get started</Link>
+                  <Link href="/login" className="nav-link">Log in</Link>
+                  <Link href="/signup" className="btn-primary">Get started</Link>
                 </>
               )}
             </div>
@@ -54,10 +53,47 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
         <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-12">{children}</main>
 
-        <footer className="border-t border-line/70 bg-cream-50/60">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-6 text-sm text-muted">
-            <p>© {new Date().getFullYear()} Cedar Learning</p>
-            <p className="font-display italic text-mocha-700">Crafted with care.</p>
+        <footer className="bg-neutral-900 text-neutral-400">
+          <div className="mx-auto max-w-6xl px-5 sm:px-6 py-12 sm:py-16">
+            <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+              {/* Brand */}
+              <div>
+                <Link href="/" className="font-display text-2xl text-white tracking-tight">Cedar</Link>
+                <p className="mt-3 text-sm leading-relaxed">A calmer way for schools and instructors to teach online.</p>
+              </div>
+
+              {/* Product */}
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-neutral-500">Product</p>
+                <ul className="mt-4 space-y-2.5 text-sm">
+                  <li><Link href="/courses" className="transition-colors duration-200 hover:text-white">Browse courses</Link></li>
+                  <li><Link href="/signup" className="transition-colors duration-200 hover:text-white">Sign up</Link></li>
+                  <li><Link href="/login" className="transition-colors duration-200 hover:text-white">Log in</Link></li>
+                </ul>
+              </div>
+
+              {/* Company */}
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-neutral-500">Company</p>
+                <ul className="mt-4 space-y-2.5 text-sm">
+                  <li><Link href="#" className="transition-colors duration-200 hover:text-white">About</Link></li>
+                </ul>
+              </div>
+
+              {/* Legal */}
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-neutral-500">Legal</p>
+                <ul className="mt-4 space-y-2.5 text-sm">
+                  <li><Link href="#" className="transition-colors duration-200 hover:text-white">Privacy policy</Link></li>
+                  <li><Link href="#" className="transition-colors duration-200 hover:text-white">Terms</Link></li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="mt-12 flex flex-wrap items-center justify-between gap-3 border-t border-neutral-800 pt-6 text-xs">
+              <p>© {new Date().getFullYear()} Cedar Learning</p>
+              <p className="font-display italic text-neutral-500">Crafted with care.</p>
+            </div>
           </div>
         </footer>
       </body>

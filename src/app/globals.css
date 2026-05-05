@@ -59,18 +59,20 @@ body::before {
 
 @layer components {
   /* ─── Buttons ─────────────────────────────────────────────────────────── */
+  /* Audit baseline: every CTA shares the same height, weight, radius, and
+     interaction. Override `text-base` etc. inline at call sites if needed. */
   .btn-primary,
   .btn-secondary,
   .btn-ghost,
   .btn-danger {
-    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5
-           text-sm font-medium tracking-tight cursor-pointer select-none
+    @apply inline-flex items-center justify-center gap-2 h-11 rounded-xl px-5
+           text-sm font-semibold tracking-tight cursor-pointer select-none
            transition-[transform,box-shadow,background-color,border-color,color] duration-200
            ease-[cubic-bezier(0.2,0.8,0.2,1)]
            focus:outline-none focus-visible:ring-2 focus-visible:ring-mocha-400
            focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50
-           disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0
-           active:translate-y-0;
+           disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100
+           hover:scale-[1.02] active:scale-[0.99];
     will-change: transform, box-shadow;
   }
 
@@ -79,7 +81,6 @@ body::before {
            bg-gradient-to-b from-mocha-600 via-mocha-700 to-mocha-800
            shadow-[0_1px_2px_rgba(42,27,15,0.20),inset_0_1px_0_rgba(255,255,255,0.14),inset_0_-1px_0_rgba(0,0,0,0.18)]
            hover:from-mocha-700 hover:via-mocha-800 hover:to-mocha-900
-           hover:-translate-y-0.5
            hover:shadow-[0_10px_24px_-8px_rgba(42,27,15,0.45),inset_0_1px_0_rgba(255,255,255,0.12)]
            active:shadow-[0_1px_2px_rgba(42,27,15,0.18),inset_0_2px_4px_rgba(0,0,0,0.20)];
   }
@@ -104,7 +105,6 @@ body::before {
     @apply text-mocha-800 bg-white border border-line
            shadow-[0_1px_2px_rgba(42,27,15,0.04)]
            hover:bg-cream-50 hover:border-mocha-300
-           hover:-translate-y-0.5
            hover:shadow-[0_8px_20px_-8px_rgba(42,27,15,0.22)]
            active:shadow-sm;
   }
@@ -117,7 +117,6 @@ body::before {
   .btn-danger {
     @apply border border-red-200 bg-white text-red-700
            hover:bg-red-50 hover:border-red-300
-           hover:-translate-y-0.5
            hover:shadow-[0_8px_20px_-8px_rgba(220,38,38,0.20)];
   }
 
@@ -216,16 +215,49 @@ body::before {
       var(--color-cream-100);
   }
 
-  /* Premium link underline that grows on hover */
-  .link-underline {
-    @apply relative text-mocha-700 transition-colors hover:text-mocha-900;
+  /* Sliding nav underline — left-to-right grow on hover, 2px brand color */
+  .nav-link {
+    @apply relative inline-flex items-center pb-1 text-sm text-mocha-800
+           transition-colors duration-200 hover:text-mocha-900;
   }
-  .link-underline::after {
+  .nav-link::after {
     content: "";
-    @apply absolute left-0 -bottom-0.5 h-px w-full origin-left scale-x-0
-           bg-current transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)];
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    background-color: var(--color-mocha-700);
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    border-radius: 2px;
   }
-  .link-underline:hover::after { @apply scale-x-100; }
+  .nav-link:hover::after,
+  .nav-link[aria-current="page"]::after {
+    transform: scaleX(1);
+  }
+
+  /* ─── Skeleton loaders ────────────────────────────────────────────────── */
+  .skeleton {
+    @apply relative overflow-hidden bg-cream-100 rounded-lg;
+  }
+  .skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.65) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    background-repeat: no-repeat;
+    background-position: -200% 0;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+  .skeleton-circle { @apply skeleton rounded-full; }
 }
 
 /* Landing animations */

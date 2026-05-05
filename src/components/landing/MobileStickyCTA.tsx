@@ -29,7 +29,7 @@ export default function MobileStickyCTA() {
       <div className="glass-strong px-4 py-3">
         <Link
           href="/signup"
-          className="btn-primary w-full justify-center py-3.5 text-base"
+          className="btn-primary w-full text-base"
         >
           Get started free
           <span aria-hidden className="text-cream-50/80 transition-transform duration-200 group-hover:translate-x-0.5">→</span>

@@ -30,14 +30,14 @@ export default function Hero() {
             <div className="animate-fade-up delay-3 mt-7 sm:mt-8 flex flex-col sm:flex-row gap-3">
               <Link
                 href="/signup"
-                className="btn-primary w-full sm:w-auto justify-center px-7 py-3.5 text-base"
+                className="btn-primary w-full sm:w-auto justify-center px-7 text-base"
               >
                 Get started free
                 <span aria-hidden className="text-cream-50/80">→</span>
               </Link>
               <Link
                 href="#preview"
-                className="btn-secondary w-full sm:w-auto justify-center px-7 py-3.5 text-base"
+                className="btn-secondary w-full sm:w-auto justify-center px-7 text-base"
               >
                 <span aria-hidden className="grid h-5 w-5 place-items-center rounded-full bg-mocha-700 text-cream-50 text-[10px]">▶</span>
                 Watch the demo

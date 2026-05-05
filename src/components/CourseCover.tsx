@@ -59,11 +59,22 @@ function Placeholder({ id, title, className }: Props) {
   );
 }
 
+/**
+ * Heuristic: avoid trying to render obvious non-image URLs (e.g. someone
+ * accidentally pasted a PDF storage path into the cover_url field). We still
+ * keep the runtime onError fallback as a safety net.
+ */
+const NON_IMAGE_EXT = /\.(pdf|docx?|pptx?|xlsx?|txt|mp4|mov|webm|m4a|mp3|zip|tar|gz)(\?|#|$)/i;
+
 export default function CourseCover(props: Props) {
   const { id, title, url, className = "" } = props;
   const [failed, setFailed] = useState(false);
 
-  if (!url || failed) return <Placeholder id={id} title={title} className={className} />;
+  const looksLikeImage = !!url && !NON_IMAGE_EXT.test(url);
+
+  if (!url || failed || !looksLikeImage) {
+    return <Placeholder id={id} title={title} className={className} />;
+  }
 
   return (
     // eslint-disable-next-line @next/next/no-img-element
