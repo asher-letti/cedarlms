@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import CourseCover from "@/components/CourseCover";
 import { MAX_COVER_BYTES, checkSize } from "@/lib/upload";
-import { CATEGORIES } from "@/lib/categories";
+import { CATEGORIES, isCanonicalCategory } from "@/lib/categories";
 
 type Course = {
   id: string; title: string; description: string | null;
@@ -18,7 +18,11 @@ export default function EditCourseClient({ course }: { course: Course }) {
   const router = useRouter();
   const [title, setTitle] = useState(course.title);
   const [description, setDescription] = useState(course.description ?? "");
-  const [category, setCategory] = useState<string>(course.category ?? "General");
+  const initialCategory = course.category ?? "General";
+  const initialIsCustom = course.category != null && !isCanonicalCategory(course.category);
+  const [category, setCategory] = useState<string>(initialIsCustom ? "__other__" : initialCategory);
+  const [customCategory, setCustomCategory] = useState<string>(initialIsCustom ? initialCategory : "");
+  const isCustom = category === "__other__";
   const [startDate, setStartDate] = useState<string>(course.course_start_date ?? "");
   const [cover, setCover] = useState<File | null>(null);
   const [coverUrl, setCoverUrl] = useState(course.cover_url);
@@ -30,6 +34,9 @@ export default function EditCourseClient({ course }: { course: Course }) {
     e.preventDefault();
     setErr(null); setMsg(null);
     if (title.trim().length < 3) return setErr("Title must be at least 3 characters.");
+    const finalCategory = isCustom ? customCategory.trim() : category;
+    if (isCustom && finalCategory.length < 2) return setErr("Custom category must be at least 2 characters.");
+    if (finalCategory.length > 40) return setErr("Category name is too long.");
     if (cover) {
       const sizeErr = checkSize(cover, MAX_COVER_BYTES);
       if (sizeErr) return setErr(sizeErr);
@@ -45,7 +52,7 @@ export default function EditCourseClient({ course }: { course: Course }) {
     }
     const { error } = await supabase.from("courses")
       .update({
-        title, description, category,
+        title, description, category: finalCategory,
         cover_url: nextCoverUrl,
         course_start_date: startDate || null,
       })
@@ -75,7 +82,17 @@ export default function EditCourseClient({ course }: { course: Course }) {
           <label className="label">Category</label>
           <select className="input mt-1.5" value={category} onChange={(e)=>setCategory(e.target.value)}>
             {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            <option value="__other__">Other (type your own)…</option>
           </select>
+          {isCustom && (
+            <input
+              className="input mt-2"
+              placeholder="e.g. Beekeeping for beginners"
+              value={customCategory}
+              onChange={(e)=>setCustomCategory(e.target.value)}
+              maxLength={40}
+            />
+          )}
         </div>
         <div>
           <label className="label">Course start date <span className="text-muted font-normal">(optional)</span></label>

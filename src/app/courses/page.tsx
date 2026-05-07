@@ -38,6 +38,21 @@ export default async function CoursesPage({
   const list = (courses ?? []) as any[];
   const filtered = !!q || !!cat;
 
+  // Discover all category values currently in use (canonical + custom).
+  // Merged with the canonical list so newly-installed categories show up
+  // even before any course exists in them.
+  const { data: catRows } = await supabase
+    .from("courses")
+    .select("category")
+    .eq("published", true)
+    .not("category", "is", null);
+  const seen = new Set<string>();
+  for (const c of CATEGORIES) seen.add(c);
+  for (const row of (catRows ?? []) as { category: string | null }[]) {
+    if (row.category) seen.add(row.category);
+  }
+  const allCategories = Array.from(seen).sort((a, b) => a.localeCompare(b));
+
   return (
     <div className="space-y-10">
       <header className="max-w-3xl">
@@ -48,7 +63,7 @@ export default async function CoursesPage({
         </p>
       </header>
 
-      <CatalogControls categories={CATEGORIES} initialQ={q} initialCat={cat} />
+      <CatalogControls categories={allCategories} initialQ={q} initialCat={cat} />
 
       {list.length === 0 ? (
         <EmptyState filtered={filtered} q={q} cat={cat} />

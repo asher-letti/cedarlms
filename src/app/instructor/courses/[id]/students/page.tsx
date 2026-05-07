@@ -2,8 +2,11 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import ProgressBar from "@/components/ProgressBar";
+import TimeOnMaterials from "./TimeOnMaterials";
 
 export const dynamic = "force-dynamic";
+
+type SearchParams = Promise<{ view?: string }>;
 
 function timeAgo(iso: string | null) {
   if (!iso) return "—";
@@ -17,8 +20,16 @@ function timeAgo(iso: string | null) {
   return new Date(iso).toLocaleDateString();
 }
 
-export default async function StudentsPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function StudentsPage({
+  params, searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: SearchParams;
+}) {
   const { id: courseId } = await params;
+  const sp = await searchParams;
+  const view = sp.view === "time" ? "time" : "progress";
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) notFound();
@@ -27,7 +38,48 @@ export default async function StudentsPage({ params }: { params: Promise<{ id: s
     .select("id, title, instructor_id").eq("id", courseId).maybeSingle();
   if (!course || course.instructor_id !== user.id) notFound();
 
-  // Get lessons + assignments for ID lists
+  const header = (
+    <div>
+      <Link href={`/instructor/courses/${course.id}`} className="text-sm text-mocha-700 hover:underline underline-offset-4">← Back to course</Link>
+      <span className="chip mt-3 inline-flex">Students</span>
+      <h1 className="h-display mt-2 text-4xl">{course.title}</h1>
+      <p className="mt-1 text-muted">Track each learner's progress, time spent and submissions.</p>
+
+      <div className="mt-5 flex flex-wrap gap-2">
+        <Link
+          href={`/instructor/courses/${course.id}/students`}
+          className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-all ${
+            view === "progress"
+              ? "bg-mocha-700 text-cream-50 shadow-[0_1px_2px_rgba(42,27,15,0.20)]"
+              : "bg-white text-mocha-800 ring-1 ring-line hover:ring-mocha-300 hover:bg-cream-50"
+          }`}
+        >
+          Progress
+        </Link>
+        <Link
+          href={`/instructor/courses/${course.id}/students?view=time`}
+          className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-all ${
+            view === "time"
+              ? "bg-mocha-700 text-cream-50 shadow-[0_1px_2px_rgba(42,27,15,0.20)]"
+              : "bg-white text-mocha-800 ring-1 ring-line hover:ring-mocha-300 hover:bg-cream-50"
+          }`}
+        >
+          Time on Materials
+        </Link>
+      </div>
+    </div>
+  );
+
+  if (view === "time") {
+    return (
+      <div className="space-y-10">
+        {header}
+        <TimeOnMaterials courseId={courseId} />
+      </div>
+    );
+  }
+
+  // Default view: progress (existing behavior)
   const [lessonsRes, assignmentsRes, enrollmentsRes] = await Promise.all([
     supabase.from("lessons").select("id, content_type").eq("course_id", courseId),
     supabase.from("assignments").select("id").eq("course_id", courseId),
@@ -62,7 +114,6 @@ export default async function StudentsPage({ params }: { params: Promise<{ id: s
   const attempts = (attemptsRes.data ?? []) as any[];
   const submissions = (submissionsRes.data ?? []) as any[];
 
-  // Aggregate per student
   type Row = {
     userId: string;
     name: string;
@@ -80,7 +131,6 @@ export default async function StudentsPage({ params }: { params: Promise<{ id: s
     const completed = progressRows.filter(p => p.user_id === userId).length;
     const progressPct = totalLessons > 0 ? (completed / totalLessons) * 100 : 0;
 
-    // Best quiz attempt per lesson per user
     const bestByLesson = new Map<string, number>();
     attempts.filter(a => a.user_id === userId).forEach(a => {
       const pct = a.total > 0 ? (a.score / a.total) * 100 : 0;
@@ -125,12 +175,7 @@ export default async function StudentsPage({ params }: { params: Promise<{ id: s
 
   return (
     <div className="space-y-10">
-      <div>
-        <Link href={`/instructor/courses/${course.id}`} className="text-sm text-mocha-700 hover:underline underline-offset-4">← Back to course</Link>
-        <span className="chip mt-3 inline-flex">Students</span>
-        <h1 className="h-display mt-2 text-4xl">{course.title}</h1>
-        <p className="mt-1 text-muted">Track each learner's progress, quiz scores and submissions.</p>
-      </div>
+      {header}
 
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Metric label="Enrolled" value={studentCount} sub="Active learners" />

@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { MAX_SUBMISSION_BYTES, checkSize } from "@/lib/upload";
+import MaterialSessionTracker from "@/components/MaterialSessionTracker";
 
 type Assignment = {
   id: string; title: string; description: string | null;
@@ -27,6 +28,8 @@ export default function AssignmentsLearner({
         const overdue = a.deadline ? new Date(a.deadline) < new Date() : false;
         return (
           <li key={a.id} className="p-5">
+            {/* Time-on-assignment tracker for the engagement window */}
+            <MaterialSessionTracker assignmentId={a.id} userId={userId} />
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h3 className="font-display text-lg text-mocha-900">{a.title}</h3>

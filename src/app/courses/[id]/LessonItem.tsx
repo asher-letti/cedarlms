@@ -2,6 +2,7 @@
 import { useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import QuizPlayer from "@/components/QuizPlayer";
+import MaterialSessionTracker from "@/components/MaterialSessionTracker";
 import { fmtDuration } from "@/lib/format";
 import {
   effectiveUnlockDate,
@@ -186,6 +187,11 @@ export default function LessonItem({
           className="material-viewer px-5 pb-5 -mt-1 space-y-3"
           onContextMenu={blockContextMenu}
         >
+          {/* Time-on-material tracker — only mounted while content is open */}
+          {!isInstructor && userId && (
+            <MaterialSessionTracker lessonId={lesson.id} userId={userId} />
+          )}
+
           {loading && <p className="text-sm text-muted">Loading…</p>}
 
           {lesson.content_type === "video" && signedUrl && (

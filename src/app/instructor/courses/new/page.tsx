@@ -11,6 +11,8 @@ export default function NewCoursePage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<string>("General");
+  const [customCategory, setCustomCategory] = useState("");
+  const isCustom = category === "__other__";
   const [cover, setCover] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -31,6 +33,13 @@ export default function NewCoursePage() {
     setErr(null);
     if (title.trim().length < 3) return setErr("Title must be at least 3 characters.");
     if (title.length > 120) return setErr("Title is too long.");
+    const finalCategory = isCustom ? customCategory.trim() : category;
+    if (isCustom && finalCategory.length < 2) {
+      return setErr("Custom category must be at least 2 characters.");
+    }
+    if (finalCategory.length > 40) {
+      return setErr("Category name is too long.");
+    }
     setLoading(true);
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -45,7 +54,7 @@ export default function NewCoursePage() {
     }
 
     const { data: course, error } = await supabase.from("courses").insert({
-      title, description, category, cover_url, instructor_id: user.id,
+      title, description, category: finalCategory, cover_url, instructor_id: user.id,
     }).select("id").single();
 
     setLoading(false);
@@ -79,7 +88,17 @@ export default function NewCoursePage() {
           <label className="label">Category</label>
           <select className="input mt-1.5" value={category} onChange={(e)=>setCategory(e.target.value)}>
             {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            <option value="__other__">Other (type your own)…</option>
           </select>
+          {isCustom && (
+            <input
+              className="input mt-2"
+              placeholder="e.g. Beekeeping for beginners"
+              value={customCategory}
+              onChange={(e)=>setCustomCategory(e.target.value)}
+              maxLength={40}
+            />
+          )}
         </div>
         <div>
           <label className="label">Cover image <span className="text-muted font-normal">(optional, max 5 MB — we'll generate a beautiful one if not)</span></label>
