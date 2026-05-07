@@ -261,6 +261,19 @@ body::before {
     background-position: -200% 0;
     animation: shimmer 1.5s ease-in-out infinite;
   }
+
+  /* ─── Material viewers ────────────────────────────────────────────────────
+     UX deterrent for casual copying / saving of course materials. Not actual
+     DRM — sophisticated users can still grab signed URLs via dev tools. */
+  .material-viewer {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+  .material-viewer img,
+  .material-viewer video {
+    -webkit-user-drag: none;
+  }
 }
 
 /* Landing animations */

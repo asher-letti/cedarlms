@@ -5,11 +5,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AssignmentsInstructor from "./AssignmentsInstructor";
 import QuizManager from "@/components/QuizManager";
+import EnrollmentKeyCard from "./EnrollmentKeyCard";
 import { MAX_LESSON_BYTES, checkSize } from "@/lib/upload";
 
 type Course = {
   id: string; title: string; description: string | null;
   cover_url: string | null; published: boolean; instructor_id: string;
+  requires_enrollment_key: boolean;
 };
 type Lesson = {
   id: string; title: string; position: number;
@@ -242,6 +244,12 @@ export default function ManageCourseClient({
 
       {/* ASSIGNMENTS */}
       <AssignmentsInstructor courseId={course.id} initial={initialAssignments} />
+
+      {/* ENROLLMENT KEY */}
+      <EnrollmentKeyCard
+        courseId={course.id}
+        initiallyRequires={course.requires_enrollment_key}
+      />
     </div>
   );
 }

@@ -15,7 +15,7 @@ export default async function CourseDetail({ params }: { params: Promise<{ id: s
   const supabase = await createClient();
   const { data: course } = await supabase
     .from("courses")
-    .select("id, title, description, cover_url, instructor_id, published, profiles:instructor_id(full_name)")
+    .select("id, title, description, cover_url, instructor_id, published, requires_enrollment_key, profiles:instructor_id(full_name)")
     .eq("id", id)
     .maybeSingle();
 
@@ -158,7 +158,11 @@ export default async function CourseDetail({ params }: { params: Promise<{ id: s
               ) : role === "instructor" ? (
                 <p className="rounded-xl bg-cream-100 p-3 text-xs text-muted">Instructors browse but don't enroll.</p>
               ) : (
-                <EnrollButton courseId={course.id} enrolled={enrolled} />
+                <EnrollButton
+                  courseId={course.id}
+                  enrolled={enrolled}
+                  requiresKey={!!course.requires_enrollment_key}
+                />
               )
             ) : (
               <Link href="/login" className="btn-primary w-full">Sign in to enroll</Link>

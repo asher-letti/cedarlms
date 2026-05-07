@@ -31,6 +31,8 @@ type Props = {
   userId?: string | null;
 };
 
+const blockContextMenu = (e: React.MouseEvent) => e.preventDefault();
+
 export default function LessonItem({
   lesson, canAccess, index, initiallyComplete, userId,
 }: Props) {
@@ -53,14 +55,6 @@ export default function LessonItem({
     setSignedUrl(data?.signedUrl ?? null);
     setLoading(false);
     setOpen(true);
-  };
-
-  const download = () => {
-    if (!signedUrl) return;
-    const a = document.createElement("a");
-    a.href = signedUrl;
-    a.download = lesson.storage_path?.split("/").pop() ?? lesson.title;
-    document.body.appendChild(a); a.click(); a.remove();
   };
 
   const setComplete = async (next: boolean) => {
@@ -121,7 +115,10 @@ export default function LessonItem({
       </button>
 
       {open && canAccess && (
-        <div className="px-5 pb-5 -mt-1 space-y-3">
+        <div
+          className="material-viewer px-5 pb-5 -mt-1 space-y-3"
+          onContextMenu={blockContextMenu}
+        >
           {loading && <p className="text-sm text-muted">Loading…</p>}
 
           {lesson.content_type === "video" && signedUrl && (
@@ -129,6 +126,9 @@ export default function LessonItem({
               <video
                 src={signedUrl}
                 controls
+                controlsList="nodownload noplaybackrate"
+                disablePictureInPicture
+                onContextMenu={blockContextMenu}
                 onEnded={onVideoEnded}
                 className="w-full rounded-xl border border-line bg-black"
               />
@@ -137,21 +137,23 @@ export default function LessonItem({
                   ✓ Marked complete — nice work!
                 </p>
               )}
-              <button onClick={download} className="btn-secondary text-xs px-3 py-1.5">Download video</button>
             </>
           )}
 
           {lesson.content_type === "document" && signedUrl && (
             <>
               {isPdf(lesson.storage_path) ? (
-                <iframe src={signedUrl} className="w-full h-[70vh] rounded-xl border border-line bg-white" />
+                <iframe
+                  src={`${signedUrl}#toolbar=0&navpanes=0`}
+                  className="w-full h-[70vh] rounded-xl border border-line bg-white"
+                  onContextMenu={blockContextMenu}
+                  title={lesson.title}
+                />
               ) : (
-                <p className="text-sm text-muted">Preview not available for this file type. Use the download button below.</p>
+                <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                  This file type can't be previewed inline. Please use a video or PDF lesson, or contact your instructor.
+                </p>
               )}
-              <div className="flex gap-2">
-                <a href={signedUrl} target="_blank" rel="noreferrer" className="btn-secondary text-xs px-3 py-1.5">Open in new tab</a>
-                <button onClick={download} className="btn-primary text-xs px-3 py-1.5">Download</button>
-              </div>
             </>
           )}
 
