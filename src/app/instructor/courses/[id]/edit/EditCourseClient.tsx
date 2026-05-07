@@ -11,6 +11,7 @@ type Course = {
   id: string; title: string; description: string | null;
   cover_url: string | null; published: boolean; instructor_id: string;
   category: string | null;
+  course_start_date: string | null;
 };
 
 export default function EditCourseClient({ course }: { course: Course }) {
@@ -18,6 +19,7 @@ export default function EditCourseClient({ course }: { course: Course }) {
   const [title, setTitle] = useState(course.title);
   const [description, setDescription] = useState(course.description ?? "");
   const [category, setCategory] = useState<string>(course.category ?? "General");
+  const [startDate, setStartDate] = useState<string>(course.course_start_date ?? "");
   const [cover, setCover] = useState<File | null>(null);
   const [coverUrl, setCoverUrl] = useState(course.cover_url);
   const [busy, setBusy] = useState(false);
@@ -42,7 +44,11 @@ export default function EditCourseClient({ course }: { course: Course }) {
       nextCoverUrl = supabase.storage.from("course-covers").getPublicUrl(path).data.publicUrl;
     }
     const { error } = await supabase.from("courses")
-      .update({ title, description, category, cover_url: nextCoverUrl })
+      .update({
+        title, description, category,
+        cover_url: nextCoverUrl,
+        course_start_date: startDate || null,
+      })
       .eq("id", course.id);
     setBusy(false);
     if (error) return setErr(error.message);
@@ -70,6 +76,12 @@ export default function EditCourseClient({ course }: { course: Course }) {
           <select className="input mt-1.5" value={category} onChange={(e)=>setCategory(e.target.value)}>
             {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
+        </div>
+        <div>
+          <label className="label">Course start date <span className="text-muted font-normal">(optional)</span></label>
+          <input type="date" className="input mt-1.5" value={startDate}
+                 onChange={(e)=>setStartDate(e.target.value)} />
+          <p className="mt-1 text-xs text-muted">Lessons with a Week number unlock weekly from this date.</p>
         </div>
         <div>
           <label className="label">Cover image</label>

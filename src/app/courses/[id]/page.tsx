@@ -7,25 +7,45 @@ import AssignmentsLearner from "./AssignmentsLearner";
 import CourseCover from "@/components/CourseCover";
 import ProgressBar from "@/components/ProgressBar";
 import { fmtDuration } from "@/lib/format";
+import {
+  currentWeekNumber,
+  effectiveUnlockDate,
+  fmtUnlockDate,
+} from "@/lib/scheduling";
 
 export const dynamic = "force-dynamic";
+
+type Lesson = {
+  id: string;
+  title: string;
+  position: number;
+  content_type: "video" | "document" | "quiz" | "text";
+  storage_path: string | null;
+  body: string | null;
+  duration_minutes: number | null;
+  week_number: number | null;
+  available_from: string | null;
+};
 
 export default async function CourseDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
   const { data: course } = await supabase
     .from("courses")
-    .select("id, title, description, cover_url, instructor_id, published, requires_enrollment_key, profiles:instructor_id(full_name)")
+    .select("id, title, description, cover_url, instructor_id, published, requires_enrollment_key, course_start_date, profiles:instructor_id(full_name)")
     .eq("id", id)
     .maybeSingle();
 
   if (!course) notFound();
 
-  const { data: lessons } = await supabase
+  const { data: lessonsRaw } = await supabase
     .from("lessons")
-    .select("id, title, position, content_type, storage_path, body, duration_minutes")
+    .select("id, title, position, content_type, storage_path, body, duration_minutes, week_number, available_from")
     .eq("course_id", id)
-    .order("position");
+    .order("week_number", { ascending: true, nullsFirst: false })
+    .order("position", { ascending: true });
+
+  const lessons = (lessonsRaw ?? []) as Lesson[];
 
   const { data: assignments } = await supabase
     .from("assignments")
@@ -52,7 +72,7 @@ export default async function CourseDetail({ params }: { params: Promise<{ id: s
         .eq("user_id", user.id)
     : { data: null };
 
-  const lessonIds = (lessons ?? []).map(l => l.id);
+  const lessonIds = lessons.map((l) => l.id);
   const { data: myProgress } = enrolled && !isInstructor && user && lessonIds.length
     ? await supabase.from("lesson_progress")
         .select("lesson_id, completed")
@@ -61,14 +81,35 @@ export default async function CourseDetail({ params }: { params: Promise<{ id: s
     : { data: null };
 
   const completedSet = new Set(((myProgress as any[]) ?? []).filter(p => p.completed).map(p => p.lesson_id));
-  const totalLessons = lessons?.length ?? 0;
+  const totalLessons = lessons.length;
   const completedLessons = completedSet.size;
   const progressPct = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
 
-  const totalDurationMin = (lessons ?? []).reduce(
-    (sum, l: any) => sum + (l.duration_minutes ?? 0), 0
-  );
+  const totalDurationMin = lessons.reduce((sum, l) => sum + (l.duration_minutes ?? 0), 0);
   const totalDurationLabel = fmtDuration(totalDurationMin);
+
+  // Group lessons by week (null → "Unscheduled" at the end)
+  const groups = (() => {
+    const map = new Map<string, Lesson[]>();
+    for (const l of lessons) {
+      const k = l.week_number != null ? String(l.week_number) : "unscheduled";
+      const arr = map.get(k) ?? [];
+      arr.push(l);
+      map.set(k, arr);
+    }
+    const order = Array.from(map.keys())
+      .filter((k) => k !== "unscheduled")
+      .map(Number)
+      .sort((a, b) => a - b)
+      .map(String);
+    if (map.has("unscheduled")) order.push("unscheduled");
+    return order.map((k) => ({ key: k, items: map.get(k)! }));
+  })();
+
+  const currWeek = currentWeekNumber(course.course_start_date);
+
+  // Continuous index across groups so LessonItem indices stay sequential.
+  let runningIndex = 0;
 
   return (
     <article className="grid gap-10 lg:grid-cols-3">
@@ -83,6 +124,9 @@ export default async function CourseDetail({ params }: { params: Promise<{ id: s
         <h1 className="h-display mt-3 text-4xl">{course.title}</h1>
         <p className="mt-2 text-sm uppercase tracking-wider text-mocha-600">
           By {(course.profiles as any)?.full_name ?? "Instructor"}
+          {course.course_start_date && (
+            <> · Starts {fmtUnlockDate(new Date(`${course.course_start_date}T00:00:00`))}</>
+          )}
         </p>
         <p className="mt-6 whitespace-pre-wrap leading-relaxed text-mocha-800">{course.description}</p>
 
@@ -95,18 +139,59 @@ export default async function CourseDetail({ params }: { params: Promise<{ id: s
             {totalDurationLabel && <> · {totalDurationLabel}</>}
           </span>
         </div>
-        <ul className="card mt-4 divide-y divide-line overflow-hidden">
-          {lessons?.length ? lessons.map((l: any, i: number) => (
-            <LessonItem
-              key={l.id}
-              lesson={l}
-              canAccess={canAccess}
-              index={i + 1}
-              initiallyComplete={completedSet.has(l.id)}
-              userId={enrolled && !isInstructor ? user?.id ?? null : null}
-            />
-          )) : <li className="p-8 text-muted text-center">No lessons yet.</li>}
-        </ul>
+
+        {totalLessons === 0 ? (
+          <div className="card mt-4 p-8 text-center text-muted">No lessons yet.</div>
+        ) : (
+          <div className="mt-4 space-y-6">
+            {groups.map((g) => {
+              const isUnscheduled = g.key === "unscheduled";
+              const weekNum = isUnscheduled ? null : Number(g.key);
+              const unlock = isUnscheduled
+                ? null
+                : effectiveUnlockDate(weekNum, null, course.course_start_date);
+              const isCurrent = !isUnscheduled && currWeek != null && weekNum === currWeek;
+
+              return (
+                <div key={g.key}>
+                  <div className="flex items-baseline justify-between">
+                    <h3 className="font-display text-lg text-mocha-900">
+                      {isUnscheduled ? "Unscheduled" : `Week ${weekNum}`}
+                      {isCurrent && (
+                        <span className="ml-2 align-middle inline-flex items-center rounded-full bg-mocha-700 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-cream-50">
+                          This week
+                        </span>
+                      )}
+                    </h3>
+                    {!isUnscheduled && unlock && (
+                      <span className="text-xs uppercase tracking-wider text-muted">
+                        {unlock.getTime() <= Date.now() ? "Open" : "Opens"} {fmtUnlockDate(unlock)}
+                      </span>
+                    )}
+                  </div>
+                  <ul className="card mt-2 divide-y divide-line overflow-hidden">
+                    {g.items.map((l) => {
+                      runningIndex += 1;
+                      return (
+                        <LessonItem
+                          key={l.id}
+                          lesson={l}
+                          canAccess={canAccess}
+                          index={runningIndex}
+                          initiallyComplete={completedSet.has(l.id)}
+                          userId={enrolled && !isInstructor ? user?.id ?? null : null}
+                          isInstructor={isInstructor}
+                          courseStartDate={course.course_start_date ?? null}
+                          isCurrentWeek={isCurrent}
+                        />
+                      );
+                    })}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {assignments && assignments.length > 0 && (
           <>
