@@ -3,14 +3,16 @@ import { useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import EnrollKeyModal from "./EnrollKeyModal";
+import { track } from "@/lib/analytics";
 
 type Props = {
   courseId: string;
+  courseTitle: string;
   enrolled: boolean;
   requiresKey: boolean;
 };
 
-export default function EnrollButton({ courseId, enrolled, requiresKey }: Props) {
+export default function EnrollButton({ courseId, courseTitle, enrolled, requiresKey }: Props) {
   const [isEnrolled, setIsEnrolled] = useState(enrolled);
   const [pending, start] = useTransition();
   const [modalOpen, setModalOpen] = useState(false);
@@ -22,7 +24,8 @@ export default function EnrollButton({ courseId, enrolled, requiresKey }: Props)
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    await supabase.from("enrollments").insert({ course_id: courseId, user_id: user.id });
+    const { error } = await supabase.from("enrollments").insert({ course_id: courseId, user_id: user.id });
+    if (!error) track("course_enrolled", { course_id: courseId, course_title: courseTitle });
     setIsEnrolled(true);
     router.refresh();
   });
@@ -47,6 +50,7 @@ export default function EnrollButton({ courseId, enrolled, requiresKey }: Props)
     }
     setModalOpen(false);
     setIsEnrolled(true);
+    track("course_enrolled", { course_id: courseId, course_title: courseTitle });
     router.refresh();
   };
 

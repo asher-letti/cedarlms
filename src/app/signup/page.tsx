@@ -3,6 +3,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { identifyUser, track } from "@/lib/analytics";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -27,6 +28,10 @@ export default function SignupPage() {
     });
     setLoading(false);
     if (error) return setErr(error.message);
+    track("user_signed_up", { role });
+    if (data.user) {
+      identifyUser(data.user.id, { email, name: fullName, role });
+    }
     if (!data.session) {
       setMsg("Check your email to confirm your account.");
       return;

@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import QuizPlayer from "@/components/QuizPlayer";
 import MaterialSessionTracker from "@/components/MaterialSessionTracker";
+import { track } from "@/lib/analytics";
 import { fmtDuration } from "@/lib/format";
 import {
   effectiveUnlockDate,
@@ -39,6 +40,7 @@ type Props = {
   initiallyComplete?: boolean;
   userId?: string | null;
   isInstructor?: boolean;
+  courseId: string;
   courseStartDate?: string | null;
   /** Highlights this lesson if it's in the learner's current week. */
   isCurrentWeek?: boolean;
@@ -58,7 +60,7 @@ function LockIcon() {
 
 export default function LessonItem({
   lesson, canAccess, index, initiallyComplete, userId,
-  isInstructor, courseStartDate, isCurrentWeek,
+  isInstructor, courseId, courseStartDate, isCurrentWeek,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
@@ -86,7 +88,17 @@ export default function LessonItem({
       setTimeout(() => setLockMessage(null), 5000);
       return;
     }
-    if (!lesson.storage_path || signedUrl) return setOpen(!open);
+    const willOpen = !open;
+    if (!lesson.storage_path || signedUrl) {
+      if (willOpen && !isInstructor) {
+        track("lesson_opened", {
+          lesson_id: lesson.id,
+          lesson_title: lesson.title,
+          course_id: courseId,
+        });
+      }
+      return setOpen(willOpen);
+    }
     setLoading(true);
     const supabase = createClient();
     const { data } = await supabase.storage.from("course-content")
@@ -94,6 +106,13 @@ export default function LessonItem({
     setSignedUrl(data?.signedUrl ?? null);
     setLoading(false);
     setOpen(true);
+    if (!isInstructor) {
+      track("lesson_opened", {
+        lesson_id: lesson.id,
+        lesson_title: lesson.title,
+        course_id: courseId,
+      });
+    }
   };
 
   const setComplete = async (next: boolean) => {
@@ -104,6 +123,9 @@ export default function LessonItem({
         user_id: userId, lesson_id: lesson.id,
         completed: true, completed_at: new Date().toISOString(),
       }, { onConflict: "user_id,lesson_id" });
+      if (!completed) {
+        track("lesson_completed", { lesson_id: lesson.id, course_id: courseId });
+      }
     } else {
       await supabase.from("lesson_progress").update({
         completed: false, completed_at: null,
@@ -237,7 +259,7 @@ export default function LessonItem({
           )}
 
           {lesson.content_type === "quiz" && (
-            <QuizPlayer lessonId={lesson.id} />
+            <QuizPlayer lessonId={lesson.id} courseId={courseId} />
           )}
 
           {showMarkComplete && (

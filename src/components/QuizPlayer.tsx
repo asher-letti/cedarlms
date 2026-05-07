@@ -1,12 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { track } from "@/lib/analytics";
 
 type Q = { id: string; position: number; question: string; options: { text: string }[] };
 type ResultItem = { question_id: string; chosen: number | null; correct: boolean; correct_index: number };
 type Result = { score: number; total: number; results: ResultItem[] };
 
-export default function QuizPlayer({ lessonId }: { lessonId: string }) {
+export default function QuizPlayer({ lessonId, courseId }: { lessonId: string; courseId?: string }) {
   const supabase = createClient();
   const [questions, setQuestions] = useState<Q[]>([]);
   const [answers, setAnswers] = useState<Record<string, number>>({});
@@ -39,7 +40,20 @@ export default function QuizPlayer({ lessonId }: { lessonId: string }) {
     setBusy(false);
     if (error) return setErr(error.message);
     const row = Array.isArray(data) ? data[0] : data;
-    if (row) setResult(row as Result);
+    if (row) {
+      setResult(row as Result);
+      const passed = row.total > 0 && row.score / row.total >= 0.5;
+      track("quiz_submitted", {
+        course_id: courseId,
+        lesson_id: lessonId,
+        score: row.score,
+        total: row.total,
+        passed,
+      });
+      if (passed) {
+        track("lesson_completed", { lesson_id: lessonId, course_id: courseId });
+      }
+    }
   };
 
   const retake = () => {

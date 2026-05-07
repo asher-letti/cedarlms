@@ -181,6 +181,7 @@ export default async function CourseDetail({ params }: { params: Promise<{ id: s
                           initiallyComplete={completedSet.has(l.id)}
                           userId={enrolled && !isInstructor ? user?.id ?? null : null}
                           isInstructor={isInstructor}
+                          courseId={course.id}
                           courseStartDate={course.course_start_date ?? null}
                           isCurrentWeek={isCurrent}
                         />
@@ -210,6 +211,7 @@ export default async function CourseDetail({ params }: { params: Promise<{ id: s
                 assignments={assignments as any}
                 mySubmissions={(mySubs as any) ?? []}
                 userId={user.id}
+                courseId={course.id}
               />
             ) : (
               <div className="card mt-4 p-6">
@@ -245,6 +247,7 @@ export default async function CourseDetail({ params }: { params: Promise<{ id: s
               ) : (
                 <EnrollButton
                   courseId={course.id}
+                  courseTitle={course.title}
                   enrolled={enrolled}
                   requiresKey={!!course.requires_enrollment_key}
                 />

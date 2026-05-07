@@ -3,6 +3,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { identifyUser, track } from "@/lib/analytics";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,9 +16,22 @@ export default function LoginPage() {
     e.preventDefault();
     setErr(null); setLoading(true);
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) { setLoading(false); return setErr(error.message); }
+    if (data.user) {
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("role, full_name")
+        .eq("id", data.user.id)
+        .maybeSingle();
+      identifyUser(data.user.id, {
+        email,
+        role: prof?.role ?? "learner",
+        name: prof?.full_name ?? null,
+      });
+      track("user_logged_in", { role: prof?.role ?? "learner" });
+    }
     setLoading(false);
-    if (error) return setErr(error.message);
     router.push("/dashboard");
     router.refresh();
   };

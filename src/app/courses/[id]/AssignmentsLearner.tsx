@@ -3,6 +3,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { MAX_SUBMISSION_BYTES, checkSize } from "@/lib/upload";
 import MaterialSessionTracker from "@/components/MaterialSessionTracker";
+import { track } from "@/lib/analytics";
 
 type Assignment = {
   id: string; title: string; description: string | null;
@@ -15,8 +16,8 @@ type Submission = {
 };
 
 export default function AssignmentsLearner({
-  assignments, mySubmissions, userId,
-}: { assignments: Assignment[]; mySubmissions: Submission[]; userId: string }) {
+  assignments, mySubmissions, userId, courseId,
+}: { assignments: Assignment[]; mySubmissions: Submission[]; userId: string; courseId: string }) {
   const supabase = createClient();
   const [subs, setSubs] = useState<Submission[]>(mySubmissions);
   const subFor = (aid: string) => subs.find(s => s.assignment_id === aid);
@@ -46,6 +47,7 @@ export default function AssignmentsLearner({
             </div>
             <SubmissionForm
               assignmentId={a.id}
+              courseId={courseId}
               userId={userId}
               existing={sub}
               supabase={supabase}
@@ -64,7 +66,7 @@ export default function AssignmentsLearner({
 }
 
 function SubmissionForm({
-  assignmentId, userId, existing, supabase, onChange,
+  assignmentId, courseId, userId, existing, supabase, onChange,
 }: any) {
   const [text, setText] = useState<string>(existing?.text_content ?? "");
   const [file, setFile] = useState<File | null>(null);
@@ -109,6 +111,7 @@ function SubmissionForm({
     onChange(data);
     setFile(null);
     setMsg(existing ? "Submission updated." : "Submitted.");
+    track("assignment_submitted", { course_id: courseId, assignment_id: assignmentId });
   };
 
   const withdraw = async () => {

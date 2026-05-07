@@ -8,6 +8,7 @@ import QuizManager from "@/components/QuizManager";
 import EnrollmentKeyCard from "./EnrollmentKeyCard";
 import { MAX_LESSON_BYTES, checkSize } from "@/lib/upload";
 import { effectiveUnlockDate, fmtUnlockDate } from "@/lib/scheduling";
+import { track } from "@/lib/analytics";
 
 type Course = {
   id: string; title: string; description: string | null;
@@ -61,7 +62,15 @@ export default function ManageCourseClient({
   const togglePublish = async () => {
     const next = !published;
     const { error } = await supabase.from("courses").update({ published: next }).eq("id", course.id);
-    if (!error) setPublished(next);
+    if (error) return;
+    setPublished(next);
+    if (next) {
+      track("course_published", {
+        course_id: course.id,
+        course_title: course.title,
+        lesson_count: lessons.length,
+      });
+    }
   };
 
   const newLessonUnlockPreview = useMemo(() => {

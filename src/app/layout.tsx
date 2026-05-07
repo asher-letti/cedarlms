@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Inter, Playfair_Display } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
 import { getSession } from "@/lib/supabase/auth";
 import SignOutButton from "@/components/SignOutButton";
+import { PHProvider } from "./providers/PostHogProvider";
+import PostHogPageView from "./components/PostHogPageView";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair", display: "swap" });
@@ -19,6 +22,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
       <body className="min-h-screen flex flex-col">
+        <PHProvider>
+          <Suspense fallback={null}>
+            <PostHogPageView />
+          </Suspense>
         <header className="sticky top-0 z-30 glass">
           <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 sm:px-6 py-3.5">
             <Link
@@ -96,6 +103,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </div>
           </div>
         </footer>
+        </PHProvider>
       </body>
     </html>
   );
